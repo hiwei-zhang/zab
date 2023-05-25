@@ -2,7 +2,7 @@ package org.hiwei.election;
 
 public enum ServerStatusEnum {
     LOOKING(1,"LOOKING"),
-    LEADER(2,"FOLLOWER"),
+    LEADER(2,"LEADER"),
     FOLLOWER(3,"FOLLOWER");
 
     private int code;
