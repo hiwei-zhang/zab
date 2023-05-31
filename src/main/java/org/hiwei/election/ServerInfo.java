@@ -5,11 +5,17 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ServerInfo {
     public static ServerStatusEnum status = ServerStatusEnum.LOOKING;
 
+    /**
+     * 最大事务id
+     */
     public static Long zxid = 0L;
 
     public static Vote currentVote = null;
 
-    public static AtomicLong logicalclock = new AtomicLong(0);
+    /**
+     * 逻辑时钟
+     */
+    public static AtomicLong logicalClock = new AtomicLong(0);
 
     public static boolean isRunning = true;
 

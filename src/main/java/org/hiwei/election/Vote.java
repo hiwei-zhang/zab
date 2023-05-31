@@ -3,9 +3,14 @@ package org.hiwei.election;
 public class Vote {
 
     private final long id;
-
+    /**
+     * 最大事务id
+     */
     private final long zxid;
 
+    /**
+     * 选票朝代
+     */
     private long epoch;
 
     public boolean isLeader() {

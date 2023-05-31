@@ -54,6 +54,9 @@ public class QuorumPeer {
 
     }
 
+    /**
+     * 选举算法
+     */
     public void election() {
         List<Vote> voteBucket = new ArrayList<>();
         while(true){
@@ -62,10 +65,10 @@ public class QuorumPeer {
                 if(ServerInfo.status== ServerStatusEnum.LOOKING&&(socketMap.keySet().size()+1>ServerInfo.peerSize/2)){
                     //开启新的选举
                     log.info("开始选举!");
-                    ServerInfo.logicalclock.incrementAndGet();
+                    ServerInfo.logicalClock.incrementAndGet();
                     if(ServerInfo.status==ServerStatusEnum.LOOKING){
                         //1.发送选票
-                        Vote sVote = new Vote(myid,ServerInfo.zxid,ServerInfo.logicalclock.longValue(),ServerInfo.status.getCode());
+                        Vote sVote = new Vote(myid,ServerInfo.zxid,ServerInfo.logicalClock.longValue(),ServerInfo.status.getCode());
                         recvQueue.offer(sVote);
                         sendQueue.offer(sVote);
                         //2.处理选票
@@ -77,7 +80,7 @@ public class QuorumPeer {
                             }else{
                                 vote = recvQueue.poll(10, TimeUnit.SECONDS);
                             }
-                             if((vote==null||vote.getEpoch()>ServerInfo.logicalclock.intValue())&&!voteBucket.isEmpty()&&voteBucket.size()>1) {
+                             if((vote==null||vote.getEpoch()>ServerInfo.logicalClock.intValue())&&!voteBucket.isEmpty()&&voteBucket.size()>1) {
                                  //进行选票pk
                                  Vote lookVote = pkVote(voteBucket);
                                  voteBucket.clear();
@@ -93,21 +96,21 @@ public class QuorumPeer {
                                      break;
                                  }
                                  //重新发送pk后的选票
-                                 ServerInfo.logicalclock.incrementAndGet();
+                                 ServerInfo.logicalClock.incrementAndGet();
                                  //发送pk选票
-                                 Vote lookLeader = new Vote(lookVote.getId(),lookVote.getZxid(), ServerInfo.logicalclock.intValue(),ServerInfo.status.getCode());
+                                 Vote lookLeader = new Vote(lookVote.getId(),lookVote.getZxid(), ServerInfo.logicalClock.intValue(),ServerInfo.status.getCode());
                                  log.info("发送pk后的选票:{}",lookLeader);
                                  sendQueue.offer(lookLeader);
                                  recvQueue.offer(lookLeader);
                              };
                              if(vote!=null){
-                                 if(vote.getEpoch()==ServerInfo.logicalclock.intValue()){
+                                 if(vote.getEpoch()==ServerInfo.logicalClock.intValue()){
                                      //放入选票桶
                                      voteBucket.add(vote);
                                  }else{
-                                     ServerInfo.logicalclock.set(vote.getEpoch());
+                                     ServerInfo.logicalClock.set(vote.getEpoch());
                                      //重新发送选票
-                                     Vote newVote = new Vote(myid,ServerInfo.zxid,ServerInfo.logicalclock.longValue(),ServerInfo.status.getCode());
+                                     Vote newVote = new Vote(myid,ServerInfo.zxid,ServerInfo.logicalClock.longValue(),ServerInfo.status.getCode());
                                      log.info("重新发送选票:{}",newVote);
                                      recvQueue.offer(newVote);
                                      sendQueue.offer(newVote);
@@ -115,7 +118,7 @@ public class QuorumPeer {
                              }
                         }
                     }
-                    ServerInfo.logicalclock.set(0);
+                    ServerInfo.logicalClock.set(0);
                 }else if(recvVote!=null){
                     log.info("收到选票：{}",recvVote.toString());
                     if(recvVote.getState()==1){
@@ -130,23 +133,28 @@ public class QuorumPeer {
         }
     }
 
+    /**
+     * 选票pk，获取获胜节点
+     * @param voteBucket
+     * @return
+     */
     private Vote pkVote(List<Vote> voteBucket) {
         Vote vr =voteBucket.get(0);
-        Map<Long,Integer> tongji = new HashMap<>();
+        Map<Long,Integer> statistics = new HashMap<>();
         for (Vote vote : voteBucket) {
             if (vote.getZxid() > vr.getZxid()) {
                 vr = vote;
             }else if(vote.getId()>vr.getId()){
                 vr = vote;
             }
-            Integer integer = tongji.get(vote.getId());
+            Integer integer = statistics.get(vote.getId());
             if (integer == null) {
-                tongji.put(vote.getId(), 1);
+                statistics.put(vote.getId(), 1);
             } else {
-                tongji.put(vote.getId(), tongji.get(vote.getId()) + 1);
+                statistics.put(vote.getId(), statistics.get(vote.getId()) + 1);
             }
         }
-        for (Map.Entry<Long, Integer> entry : tongji.entrySet()) {
+        for (Map.Entry<Long, Integer> entry : statistics.entrySet()) {
             Long k = entry.getKey();
             Integer v = entry.getValue();
             if (v > ServerInfo.peerSize / 2) {
@@ -224,12 +232,17 @@ public class QuorumPeer {
                 e.printStackTrace();
             }
         }
+
+        /**
+         * 连接处理
+         * @param zkSocket
+         */
         private void handleConnection(ZkSocket zkSocket) {
             Long sid = null, protocolVersion = null;
             try {
                 Socket sock = zkSocket.getSocket();
                 protocolVersion = zkSocket.getDin().readLong();
-                if (protocolVersion >= 0) { // this is a server id and not a protocol version
+                if (protocolVersion >= 0) {
                     sid = protocolVersion;
                 }
                 if(sid<myid){
@@ -262,6 +275,9 @@ public class QuorumPeer {
         }
     }
 
+    /**
+     * 选票发送监听器
+     */
     public void startVoteSendListener(){
         try {
             countDownLatch.await();

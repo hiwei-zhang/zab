@@ -13,12 +13,18 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 public class VoteSendListener extends Thread{
+    /**
+     * 选票发送队列
+     */
     private BlockingQueue<Vote> sendQueue;
-
+    /**
+     * node节点间连接池
+     */
     private Map<Long,ZkSocket> socketMap ;
 
-    private Socket socket;
-
+    /**
+     * 节点id
+     */
     private Long sid;
 
     private ThreadPoolExecutor pool = new ThreadPoolExecutor(10,10,60,TimeUnit.SECONDS
